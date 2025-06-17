@@ -11,8 +11,8 @@ st.set_page_config(layout="wide")
 try:
     logo = Image.open('logo.png')
     st.image(logo, width=150)
-except FileNotFoundError:
-    st.warning("Logo no encontrado. Se omite la imagen.")
+except:
+    pass  # Silencia el error completamente
 
 # Títulos modificados según solicitud
 st.title("📈 Calculadora de Movilidad Previsional")  # Eliminada la palabra "Exacta"
