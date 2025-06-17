@@ -10,9 +10,9 @@ st.set_page_config(layout="wide")
 # IMPORTANTE: Sube tu logo.png al mismo directorio que tu script o usa una URL
 try:
     logo = Image.open('logo.png')
-    st.image(logo, width=150)  # Ajusta el ancho según necesites
-except:
-    st.warning("Logo no encontrado. Por favor sube 'logo.png' o actualiza la ruta.")
+    st.image(logo, width=150)
+except FileNotFoundError:
+    st.warning("Logo no encontrado. Se omite la imagen.")
 
 # Títulos modificados según solicitud
 st.title("📈 Calculadora de Movilidad Previsional")  # Eliminada la palabra "Exacta"
