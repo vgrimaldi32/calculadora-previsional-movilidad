@@ -1,18 +1,20 @@
 import streamlit as st
 import pandas as pd
 from datetime import datetime
-from PIL import Image  # Para manejar imágenes/logo
+from PIL import Image
 
-# --- Configuración de la página con logo ---
-st.set_page_config(layout="wide")
-
-# Logo (reemplaza 'logo.png' con tu archivo de imagen)
-# IMPORTANTE: Sube tu logo.png al mismo directorio que tu script o usa una URL
+# Configuración del logo (en la barra lateral o arriba del título)
 try:
-    logo = Image.open('logo.png')
-    st.image(logo, width=150)
-except:
-    pass  # Silencia el error completamente
+    logo = Image.open("logo_para_app.png")  # ¡Asegúrate de que coincida el nombre!
+    
+    # Opción 1: Logo en barra lateral (recomendado para no afectar el layout)
+    st.sidebar.image(logo, width=200, use_column_width="auto")  # Ajusta el ancho según necesites
+    
+    # Opción 2: Logo arriba del título (comenta una opción si usas la otra)
+    # st.image(logo, width=200, output_format="PNG")  # Para posición central
+    
+except FileNotFoundError:
+    st.sidebar.warning("Logo no encontrado. Verifica que 'logo_para_app.png' esté en la raíz del repositorio.")
 
 # Títulos modificados según solicitud
 st.title("📈 Calculadora de Movilidad Previsional")  # Eliminada la palabra "Exacta"
