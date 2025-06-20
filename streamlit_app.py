@@ -2,37 +2,58 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from PIL import Image
+import os  # <- Nueva importación necesaria
 
 # =============================================
-# NUEVO HEADER CON ESTILO CLÁSICO (OPCIÓN 1)
+# NUEVO HEADER MEJORADO CON VERIFICACIÓN ROBUSTA
 # =============================================
 st.set_page_config(page_title="Calculadora Previsional", layout="centered")
 
-# Estilos CSS personalizados
-st.markdown("""
-<style>
-    .header-container {
-        border-bottom: 2px solid #4a8bc9;
-        padding-bottom: 15px;
-        margin-bottom: 20px;
-    }
-    .logo-title-wrapper {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-    .main-title {
-        font-size: 32px !important;
-        margin-top: 10px !important;
-        color: #2c3e50;
-    }
-    .subheader {
-        font-size: 18px !important;
-        color: #7f8c8d;
-        text-align: center;
-    }
-</style>
-""", unsafe_allow_html=True)
+# Función para convertir imagen a base64
+def logo_to_base64(img):
+    import io
+    import base64
+    buffered = io.BytesIO()
+    img.save(buffered, format="PNG")
+    return base64.b64encode(buffered.getvalue()).decode()
+
+# Carga segura del logo
+def load_logo():
+    try:
+        if not os.path.exists("logo_para_app.png"):
+            st.sidebar.warning("Archivo de logo no encontrado en la ruta")
+            return None
+        
+        logo = Image.open("logo_para_app.png")
+        return logo
+    except Exception as e:
+        st.sidebar.error(f"Error técnico con el logo: {str(e)}")
+        return None
+
+# Mostrar logo centrado
+logo = load_logo()
+if logo:
+    st.markdown("""
+    <style>
+        .logo-header {
+            text-align: center;
+            margin: 0 auto;
+            padding-bottom: 15px;
+        }
+        .logo-img {
+            max-height: 120px;
+            width: auto;
+        }
+    </style>
+    <div class='logo-header'>
+        <img src='data:image/png;base64,{logo_to_base64(logo)}' class='logo-img'>
+    </div>
+    """.format(logo_to_base64(logo)), unsafe_allow_html=True)
+
+# =============================================
+# EL RESTO DE TU CÓDIGO ACTUAL SE MANTIENE IGUAL
+# A PARTIR DE AQUÍ (conserva todo lo demás)
+# =============================================
 
 # Header con contenedor
 with st.container():
