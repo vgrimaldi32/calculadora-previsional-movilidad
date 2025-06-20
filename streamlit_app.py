@@ -2,81 +2,76 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 from PIL import Image
-import os  # <- Nueva importación necesaria
+import os
+import base64
+from io import BytesIO
 
 # =============================================
-# NUEVO HEADER MEJORADO CON VERIFICACIÓN ROBUSTA
+# CONFIGURACIÓN INICIAL MEJORADA
 # =============================================
-st.set_page_config(page_title="Calculadora Previsional", layout="centered")
 
-# Función para convertir imagen a base64
-def logo_to_base64(img):
-    import io
-    import base64
-    buffered = io.BytesIO()
-    img.save(buffered, format="PNG")
-    return base64.b64encode(buffered.getvalue()).decode()
+# Configuración de la página
+st.set_page_config(
+    page_title="Calculadora Previsional",
+    page_icon="📈",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
 
-# Carga segura del logo
-def load_logo():
+# =============================================
+# MANEJO DEL LOGO OPTIMIZADO
+# =============================================
+
+def mostrar_logo():
+    """
+    Función optimizada para mostrar el logo con manejo de errores robusto
+    """
     try:
+        # Verificar existencia del archivo
         if not os.path.exists("logo_para_app.png"):
-            st.sidebar.warning("Archivo de logo no encontrado en la ruta")
+            st.sidebar.warning("⚠️ Archivo 'logo_para_app.png' no encontrado en el directorio")
             return None
         
+        # Cargar y redimensionar logo
         logo = Image.open("logo_para_app.png")
+        
+        # Mostrar logo centrado
+        col1, col2, col3 = st.columns([1,2,1])
+        with col2:
+            st.image(logo, width=180)
+        
         return logo
+    
     except Exception as e:
-        st.sidebar.error(f"Error técnico con el logo: {str(e)}")
+        st.sidebar.error(f"❌ Error al cargar el logo: {str(e)}")
         return None
 
-# Mostrar logo centrado
-logo = load_logo()
-if logo:
-    st.markdown("""
-    <style>
-        .logo-header {
-            text-align: center;
-            margin: 0 auto;
-            padding-bottom: 15px;
-        }
-        .logo-img {
-            max-height: 120px;
-            width: auto;
-        }
-    </style>
-    <div class='logo-header'>
-        <img src='data:image/png;base64,{logo_to_base64(logo)}' class='logo-img'>
-    </div>
-    """.format(logo_to_base64(logo)), unsafe_allow_html=True)
-
 # =============================================
-# EL RESTO DE TU CÓDIGO ACTUAL SE MANTIENE IGUAL
-# A PARTIR DE AQUÍ (conserva todo lo demás)
+# INTERFAZ PRINCIPAL
 # =============================================
 
-# Header con contenedor
-with st.container():
-    st.markdown('<div class="header-container">', unsafe_allow_html=True)
-    
-    col1, col2, col3 = st.columns([1,2,1])
-    with col2:
-        try:
-            logo = Image.open("logo_para_app.png")
-            st.image(logo, width=160)
-        except FileNotFoundError:
-            st.warning("Logo no encontrado")
-        
-        st.markdown('<h1 class="main-title">📈 Calculadora de Movilidad Previsional</h1>', unsafe_allow_html=True)
-        st.markdown('<h2 class="subheader">Comparación: ANSeS vs. Fallos Martinez/Italiano</h2>', unsafe_allow_html=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+# Mostrar logo
+mostrar_logo()
+
+# Título principal
+st.markdown("""
+    <h1 style='text-align: center; margin-bottom: 10px;'>
+    📈 Calculadora de Movilidad Previsional
+    </h1>
+""", unsafe_allow_html=True)
+
+# Subtítulo
+st.markdown("""
+    <h2 style='text-align: center; color: #666666; margin-top: 0; margin-bottom: 30px;'>
+    Comparación: ANSeS vs. Fallos Martínez/Italiano
+    </h2>
+""", unsafe_allow_html=True)
 
 # =============================================
-# RESTANTE DEL CÓDIGO ORIGINAL (conservado)
+# DATOS DE ACTUALIZACIÓN
 # =============================================
 
-# --- Datos ANSeS (tus coeficientes exactos) ---
+# --- Datos ANSeS ---
 data_anses = {
     "Fecha": ["2020-03", "2020-06", "2020-09", "2020-12", "2021-03", "2021-06", 
              "2021-09", "2021-12", "2022-03", "2022-06", "2022-09", "2022-12",
@@ -94,7 +89,7 @@ data_anses = {
     ]
 }
 
-# --- Datos Justicia (tus coeficientes exactos) ---
+# --- Datos Justicia ---
 data_justicia = {
     "Fecha": ["2020-03", "2020-06", "2020-09", "2020-12", "2021-03", "2021-06",
              "2021-09", "2021-12", "2022-03", "2022-06", "2022-09", "2022-12",
@@ -117,71 +112,149 @@ df_justicia = pd.DataFrame(data_justicia)
 df_anses["Fecha"] = pd.to_datetime(df_anses["Fecha"])
 df_justicia["Fecha"] = pd.to_datetime(df_justicia["Fecha"])
 
-# --- Interfaz de usuario ---
+# =============================================
+# INTERFAZ DE USUARIO
+# =============================================
+
 with st.container():
+    st.markdown("### 📝 Datos de Entrada")
     nombre = st.text_input("Nombre de la persona:", value="Ejemplo")
+    
     col1, col2 = st.columns(2)
     with col1:
-        haber_base = st.number_input("Haber base:", min_value=0.0, format="%.2f", value=50000.0)
-    with col2:
-        fecha_base = st.text_input("Fecha de jubilación o primer cobro (YYYY-MM):", value="2022-10")
-
-# --- Cálculos exactos (válidos para cualquier fecha) ---
-def calcular_actualizacion(haber_base, fecha_base):
-    fecha_base_dt = pd.to_datetime(fecha_base)
-    
-    # ANSeS: Fórmula especial SOLO para jubilados pre-marzo 2020
-    if fecha_base_dt <= pd.to_datetime("2020-02"):
-        haber_marzo2020 = (haber_base + 1500) * 1.023  # $1500 + 2.3%
-        coefs_anses = [haber_marzo2020 / haber_base] + list(
-            df_anses[(df_anses["Fecha"] > pd.to_datetime("2020-03")) & 
-            (df_anses["Fecha"] >= fecha_base_dt)]["Coeficiente"]
+        haber_base = st.number_input(
+            "Haber base ($):", 
+            min_value=0.0, 
+            step=1000.0,
+            format="%.2f", 
+            value=50000.0
         )
-    else:
-        coefs_anses = df_anses[df_anses["Fecha"] >= fecha_base_dt]["Coeficiente"]
-    
-    # Justicia: Siempre desde fecha_base (sin fórmulas especiales)
-    coefs_justicia = df_justicia[df_justicia["Fecha"] >= fecha_base_dt]["Coeficiente"]
-    
-    # Aplicar coeficientes (ignorar NaN)
-    haber_anses = haber_base
-    for coef in coefs_anses:
-        if pd.notna(coef):
-            haber_anses *= coef
-    
-    haber_justicia = haber_base
-    for coef in coefs_justicia:
-        haber_justicia *= coef
-    
-    return haber_anses, haber_justicia
+    with col2:
+        fecha_base = st.text_input(
+            "Fecha de jubilación o primer cobro (YYYY-MM):", 
+            value="2022-10",
+            help="Formato: AAAA-MM (ej: 2020-03)"
+        )
 
-if st.button("Calcular", type="primary"):
+# =============================================
+# FUNCIÓN DE CÁLCULO
+# =============================================
+
+def calcular_actualizacion(haber_base, fecha_base):
+    """
+    Calcula la actualización del haber según ANSeS y Justicia
+    """
     try:
-        haber_anses, haber_justicia = calcular_actualizacion(haber_base, fecha_base)
-        diferencia = haber_justicia - haber_anses
-        porcentaje = (diferencia / haber_anses) * 100 if haber_anses != 0 else 0
+        fecha_base_dt = pd.to_datetime(fecha_base)
         
-        st.markdown("---")
-        st.subheader(f"🔍 Resultados para {nombre}:")
-        col1, col2, col3 = st.columns(3)
-        with col1:
-            st.metric("ANSeS", f"${haber_anses:,.2f}")
-        with col2:
-            st.metric("Justicia (Fallos)", f"${haber_justicia:,.2f}")
-        with col3:
-            st.metric("Diferencia", 
-                     f"${diferencia:,.2f}", 
-                     f"{porcentaje:.2f}%",
-                     delta_color="inverse")
+        # ANSeS: Fórmula especial para jubilados pre-marzo 2020
+        if fecha_base_dt <= pd.to_datetime("2020-02"):
+            haber_marzo2020 = (haber_base + 1500) * 1.023  # $1500 + 2.3%
+            coefs_anses = [haber_marzo2020 / haber_base] + list(
+                df_anses[
+                    (df_anses["Fecha"] > pd.to_datetime("2020-03")) & 
+                    (df_anses["Fecha"] >= fecha_base_dt)
+                ]["Coeficiente"]
+            )
+        else:
+            coefs_anses = df_anses[df_anses["Fecha"] >= fecha_base_dt]["Coeficiente"]
+        
+        # Justicia: Siempre desde fecha_base
+        coefs_justicia = df_justicia[df_justicia["Fecha"] >= fecha_base_dt]["Coeficiente"]
+        
+        # Aplicar coeficientes (ignorar NaN)
+        haber_anses = haber_base
+        for coef in coefs_anses:
+            if pd.notna(coef):
+                haber_anses *= coef
+        
+        haber_justicia = haber_base
+        for coef in coefs_justicia:
+            haber_justicia *= coef
+        
+        return haber_anses, haber_justicia
     
     except Exception as e:
-        st.error(f"Error: {e}. Verifica la fecha ingresada.")
+        raise ValueError(f"Error en el cálculo: {str(e)}")
 
-# --- Ejemplos de uso ---
+# =============================================
+# BOTÓN DE CÁLCULO Y RESULTADOS
+# =============================================
+
+if st.button("🔄 Calcular", type="primary", use_container_width=True):
+    with st.spinner("Calculando..."):
+        try:
+            haber_anses, haber_justicia = calcular_actualizacion(haber_base, fecha_base)
+            diferencia = haber_justicia - haber_anses
+            porcentaje = (diferencia / haber_anses) * 100 if haber_anses != 0 else 0
+            
+            st.markdown("---")
+            st.subheader(f"🔍 Resultados para {nombre}:")
+            
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.metric(
+                    "ANSeS", 
+                    f"${haber_anses:,.2f}".replace(",", " ").replace(".", ",").replace(" ", "."),
+                    help="Cálculo según coeficientes oficiales de ANSeS"
+                )
+            with col2:
+                st.metric(
+                    "Justicia (Fallos)", 
+                    f"${haber_justicia:,.2f}".replace(",", " ").replace(".", ",").replace(" ", "."),
+                    help="Cálculo según fallos Martínez/Italiano"
+                )
+            with col3:
+                st.metric(
+                    "Diferencia", 
+                    f"${diferencia:,.2f}".replace(",", " ").replace(".", ",").replace(" ", "."), 
+                    f"{porcentaje:.2f}%",
+                    delta_color="inverse",
+                    help="Diferencia entre ambos cálculos"
+                )
+            
+            # Mostrar detalles adicionales
+            with st.expander("📊 Ver detalles del cálculo"):
+                st.write(f"**Haber base:** ${haber_base:,.2f}")
+                st.write(f"**Fecha base:** {fecha_base}")
+                
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}. Por favor verifica los datos ingresados.")
+
+# =============================================
+# INFORMACIÓN ADICIONAL
+# =============================================
+
 st.markdown("---")
-st.info("""
-**📌 Ejemplos válidos:**  
-- **Jubilación en 2020**: `2020-02` → Aplica $1500 + 2.3% en marzo 2020 + coeficientes posteriores.  
-- **Jubilación en 2022**: `2022-10` → Solo usa coeficientes desde octubre 2022.  
-- **Jubilación en 2024**: `2024-03` → Coeficientes desde marzo 2024.  
-""")
+with st.expander("ℹ️ Instrucciones y ejemplos"):
+    st.markdown("""
+    **📌 Ejemplos válidos:**  
+    - **Jubilación en 2020**: `2020-02` → Aplica $1500 + 2.3% en marzo 2020 + coeficientes posteriores.  
+    - **Jubilación en 2022**: `2022-10` → Solo usa coeficientes desde octubre 2022.  
+    - **Jubilación en 2024**: `2024-03` → Coeficientes desde marzo 2024.  
+    
+    **⚠️ Notas importantes:**  
+    - Todos los cálculos son aproximados y deben ser verificados por un profesional.  
+    - Los coeficientes pueden ser actualizados periódicamente.  
+    """)
+
+# =============================================
+# ESTILOS ADICIONALES
+# =============================================
+
+st.markdown("""
+    <style>
+        .stButton>button {
+            font-weight: bold;
+            border: 2px solid #4CAF50;
+        }
+        .stMetric {
+            background-color: #f0f2f6;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .stAlert {
+            border-radius: 10px;
+        }
+    </style>
+""", unsafe_allow_html=True)
