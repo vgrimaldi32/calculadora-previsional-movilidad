@@ -3,22 +3,57 @@ import pandas as pd
 from datetime import datetime
 from PIL import Image
 
-# Configuración del logo (en la barra lateral o arriba del título)
-try:
-    logo = Image.open("logo_para_app.png")  # ¡Asegúrate de que coincida el nombre!
-    
-    # Opción 1: Logo en barra lateral (recomendado para no afectar el layout)
-    st.sidebar.image(logo, width=200, use_column_width="auto")  # Ajusta el ancho según necesites
-    
-    # Opción 2: Logo arriba del título (comenta una opción si usas la otra)
-    # st.image(logo, width=200, output_format="PNG")  # Para posición central
-    
-except FileNotFoundError:
-    st.sidebar.warning("Logo no encontrado. Verifica que 'logo_para_app.png' esté en la raíz del repositorio.")
+# =============================================
+# NUEVO HEADER CON ESTILO CLÁSICO (OPCIÓN 1)
+# =============================================
+st.set_page_config(page_title="Calculadora Previsional", layout="centered")
 
-# Títulos modificados según solicitud
-st.title("📈 Calculadora de Movilidad Previsional")  # Eliminada la palabra "Exacta"
-st.subheader("Comparación: ANSeS vs. Fallos Martinez/Italiano")  # Subtítulo actualizado
+# Estilos CSS personalizados
+st.markdown("""
+<style>
+    .header-container {
+        border-bottom: 2px solid #4a8bc9;
+        padding-bottom: 15px;
+        margin-bottom: 20px;
+    }
+    .logo-title-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .main-title {
+        font-size: 32px !important;
+        margin-top: 10px !important;
+        color: #2c3e50;
+    }
+    .subheader {
+        font-size: 18px !important;
+        color: #7f8c8d;
+        text-align: center;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Header con contenedor
+with st.container():
+    st.markdown('<div class="header-container">', unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        try:
+            logo = Image.open("logo_para_app.png")
+            st.image(logo, width=160)
+        except FileNotFoundError:
+            st.warning("Logo no encontrado")
+        
+        st.markdown('<h1 class="main-title">📈 Calculadora de Movilidad Previsional</h1>', unsafe_allow_html=True)
+        st.markdown('<h2 class="subheader">Comparación: ANSeS vs. Fallos Martinez/Italiano</h2>', unsafe_allow_html=True)
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# =============================================
+# RESTANTE DEL CÓDIGO ORIGINAL (conservado)
+# =============================================
 
 # --- Datos ANSeS (tus coeficientes exactos) ---
 data_anses = {
