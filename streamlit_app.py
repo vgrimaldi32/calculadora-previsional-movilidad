@@ -191,28 +191,46 @@ if st.button("🔄 Calcular", type="primary", use_container_width=True):
             st.markdown("---")
             st.subheader(f"🔍 Resultados para {nombre}:")
             
+            # --- CSS para evitar truncamiento ---
+            st.markdown("""
+                <style>
+                    div[data-testid="stMetric"] {
+                        min-width: 120px !important;
+                    }
+                    .stMetric [data-testid="stMetricValue"] {
+                        font-size: 18px !important;
+                    }
+                </style>
+            """, unsafe_allow_html=True)
+            
             col1, col2, col3 = st.columns(3)
             with col1:
                 st.metric(
                     "ANSeS", 
-                    f"${haber_anses:,.2f}".replace(",", " ").replace(".", ",").replace(" ", "."),
+                    f"${haber_anses:,.0f}".replace(",", "."),
                     help="Cálculo según coeficientes oficiales de ANSeS"
                 )
             with col2:
                 st.metric(
                     "Justicia (Fallos)", 
-                    f"${haber_justicia:,.2f}".replace(",", " ").replace(".", ",").replace(" ", "."),
+                    f"${haber_justicia:,.0f}".replace(",", "."),
                     help="Cálculo según fallos Martínez/Italiano"
                 )
             with col3:
                 st.metric(
                     "Diferencia", 
-                    f"${diferencia:,.2f}".replace(",", " ").replace(".", ",").replace(" ", "."), 
-                    f"{porcentaje:.2f}%",
-                    delta_color="inverse",
-                    help="Diferencia entre ambos cálculos"
+                    f"${diferencia:,.0f}".replace(",", "."), 
+                    f"{porcentaje:.1f}%",  # Un solo decimal
+                    delta_color="inverse"
                 )
             
+            # Detalles expandibles (opcional)
+            with st.expander("📊 Ver detalles del cálculo"):
+                st.write(f"**Haber base:** ${haber_base:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                st.write(f"**Fecha base:** {fecha_base}")
+                
+        except Exception as e:
+            st.error(f"❌ Error: {str(e)}")
             # Mostrar detalles adicionales
             with st.expander("📊 Ver detalles del cálculo"):
                 st.write(f"**Haber base:** ${haber_base:,.2f}")
