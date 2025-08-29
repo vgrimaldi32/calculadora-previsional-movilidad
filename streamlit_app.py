@@ -5,6 +5,7 @@ from PIL import Image
 import os
 import base64
 from io import BytesIO
+import re
 
 # =============================================
 # CONFIGURACIÓN INICIAL
@@ -15,6 +16,56 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="expanded"
 )
+
+# =============================================
+# FUNCIONES AUXILIARES PARA FORMATO NUMÉRICO
+# =============================================
+def parse_argentine_number(number_str):
+    """Convierte formato argentino (18.365,8) a float"""
+    try:
+        # Remover puntos de miles y convertir coma decimal a punto
+        cleaned = number_str.replace('.', '').replace(',', '.')
+        return float(cleaned)
+    except ValueError:
+        return None
+
+def format_argentine_number(number):
+    """Formatea un número al formato argentino (18.365,80)"""
+    try:
+        return f"{number:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+    except:
+        return str(number)
+
+def argentine_number_input(label, value=0.0, min_value=0.0, step=1000.0, key=None):
+    """
+    Input numérico con formato argentino (puntos de miles, coma decimal)
+    """
+    # Convertir valor inicial a formato argentino
+    initial_value = format_argentine_number(value)
+    
+    user_input = st.text_input(label, value=initial_value, key=key)
+    
+    # Validar y convertir
+    if re.match(r'^[\d\.]*,\d{0,2}$|^[\d\.]*$', user_input.replace(" ", "")):
+        try:
+            # Remover puntos de miles, convertir coma a punto
+            cleaned = user_input.replace('.', '').replace(',', '.')
+            if cleaned == '':
+                numeric_value = min_value
+            else:
+                numeric_value = float(cleaned)
+            
+            if numeric_value >= min_value:
+                return numeric_value
+            else:
+                st.error(f"El valor debe ser mayor o igual a {format_argentine_number(min_value)}")
+                return min_value
+        except ValueError:
+            st.error("Formato inválido. Use: 18.365,80")
+            return value
+    else:
+        st.error("Formato inválido. Use: 18.365,80")
+        return value
 
 # =============================================
 # FUNCIÓN PARA MOSTRAR LOGO
@@ -35,7 +86,7 @@ def mostrar_logo():
         return None
 
 # =============================================
-# DATOS DE COEFICIENTES
+# DATOS DE COEFICIENTES (MANTENIDO)
 # =============================================
 data_anses = {
     "Fecha": ["2020-03", "2020-06", "2020-09", "2020-12", "2021-03", "2021-06", 
@@ -75,7 +126,7 @@ df_anses["Fecha"] = pd.to_datetime(df_anses["Fecha"])
 df_justicia["Fecha"] = pd.to_datetime(df_justicia["Fecha"])
 
 # =============================================
-# FUNCIÓN DE CÁLCULO
+# FUNCIÓN DE CÁLCULO (MANTENIDA)
 # =============================================
 def calcular_actualizacion(haber_base, fecha_base):
     try:
@@ -109,7 +160,7 @@ def calcular_actualizacion(haber_base, fecha_base):
         raise ValueError(f"Error en el cálculo: {str(e)}")
 
 # =============================================
-# INTERFAZ DE USUARIO
+# INTERFAZ DE USUARIO MODIFICADA
 # =============================================
 mostrar_logo()
 
@@ -128,12 +179,13 @@ with st.container():
     
     col1, col2 = st.columns(2)
     with col1:
-        haber_base = st.number_input(
+        # REEMPLAZADO: st.number_input por argentine_number_input
+        haber_base = argentine_number_input(
             "Haber base ($):", 
-            min_value=0.0, 
+            value=50000.0,
+            min_value=0.0,
             step=1000.0,
-            format="%.2f", 
-            value=50000.0
+            key="haber_base"
         )
     with col2:
         fecha_base = st.text_input(
@@ -163,23 +215,23 @@ if st.button("🔄 Calcular", type="primary", use_container_width=True):
             with col1:
                 st.metric(
                     "ANSeS", 
-                    f"${haber_anses:,.0f}".replace(",", ".")
+                    f"${format_argentine_number(haber_anses)}"
                 )
             with col2:
                 st.metric(
                     "Justicia (Fallos)", 
-                    f"${haber_justicia:,.0f}".replace(",", ".")
+                    f"${format_argentine_number(haber_justicia)}"
                 )
             with col3:
                 st.metric(
                     "Diferencia", 
-                    f"${diferencia:,.0f}".replace(",", "."), 
+                    f"${format_argentine_number(diferencia)}", 
                     f"{porcentaje:.1f}%",
                     delta_color="inverse"
                 )
             
             with st.expander("📊 Ver detalles del cálculo"):
-                st.write(f"**Haber base:** ${haber_base:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."))
+                st.write(f"**Haber base:** ${format_argentine_number(haber_base)}")
                 st.write(f"**Fecha base:** {fecha_base}")
                 
         except Exception as e:
@@ -191,6 +243,10 @@ with st.expander("ℹ️ Instrucciones y ejemplos"):
     **📌 Ejemplos válidos:**  
     - `2020-02` → Jubilación pre-marzo 2020  
     - `2022-10` → Jubilación reciente  
+    
+    **💡 Formato numérico:** Use puntos para miles y coma para decimales
+    - Ej: `50.000,00` → Cincuenta mil pesos
+    - Ej: `18.365,80` → Dieciocho mil trescientos sesenta y cinco pesos con ochenta centavos
     """)
 
 st.markdown("""
